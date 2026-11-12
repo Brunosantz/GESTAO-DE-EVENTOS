@@ -219,3 +219,91 @@ def test_organizador_com_permissao(client):
 
     assert resposta.status_code == 201
     assert resposta.json()["nome"] == "Categoria do Organizador"
+
+
+def test_admin_desativa_usuario(client):
+    cadastrar_usuario(client, "usuario_para_desativar@email.com")
+    admin = cadastrar_usuario(client, "admin_desativar@email.com", perfil="admin")
+    token = obter_token(client, admin.email)
+    usuario = SessionTeste().query(Usuario).filter_by(
+        email="usuario_para_desativar@email.com"
+    ).one()
+
+    resposta = client.delete(
+        f"/usuarios/{usuario.id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["mensagem"] == "Usuário desativado"
+    assert client.post(
+        "/auth/login",
+        data={
+            "username": "usuario_para_desativar@email.com",
+            "password": "Senha123456"
+        }
+    ).status_code == 401
+
+
+def test_participante_nao_pode_desativar_usuario(client):
+    cadastrar_usuario(client, "outro_usuario@email.com")
+    cadastrar_usuario(client, "participante_exclusao@email.com")
+    token = obter_token(client, "participante_exclusao@email.com")
+    usuario = SessionTeste().query(Usuario).filter_by(
+        email="outro_usuario@email.com"
+    ).one()
+
+    resposta = client.delete(
+        f"/usuarios/{usuario.id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resposta.status_code == 403
+
+
+def test_admin_exclui_categoria_sem_eventos(client):
+    admin = cadastrar_usuario(client, "admin_categoria@email.com", perfil="admin")
+    token = obter_token(client, admin.email)
+    categoria = client.post(
+        "/categorias",
+        json={"nome": "Categoria para excluir"},
+        headers={"Authorization": f"Bearer {token}"}
+    ).json()
+
+    resposta = client.delete(
+        f"/categorias/{categoria['id']}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["mensagem"] == "Categoria excluída"
+
+
+def test_categoria_vinculada_nao_pode_ser_excluida(client):
+    admin = cadastrar_usuario(client, "admin_categoria_vinculada@email.com", perfil="admin")
+    token = obter_token(client, admin.email)
+    headers = {"Authorization": f"Bearer {token}"}
+    categoria = client.post(
+        "/categorias",
+        json={"nome": "Categoria vinculada"},
+        headers=headers
+    ).json()
+    evento = client.post(
+        "/eventos",
+        json={
+            "titulo": "Evento com categoria",
+            "data_inicio": "2030-01-01T10:00:00",
+            "data_fim": "2030-01-01T11:00:00",
+            "capacidade": 10,
+            "categoria_id": categoria["id"]
+        },
+        headers=headers
+    )
+    assert evento.status_code == 201
+
+    resposta = client.delete(
+        f"/categorias/{categoria['id']}",
+        headers=headers
+    )
+
+    assert resposta.status_code == 409

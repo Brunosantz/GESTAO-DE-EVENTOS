@@ -296,7 +296,7 @@ def registrar(dados: UsuarioCreate, db: Session = Depends(get_db)):
 @app.post("/auth/login", tags=["Autenticação"])
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     usuario = db.scalar(select(Usuario).where(Usuario.email == form.username))
-    if not usuario or not pwd_context.verify(form.password, usuario.senha_hash):
+    if not usuario or not usuario.ativo or not pwd_context.verify(form.password, usuario.senha_hash):
         raise HTTPException(401, "E-mail ou senha inválidos")
     return {"access_token": criar_token(usuario), "token_type": "bearer"}
 
@@ -316,6 +316,17 @@ def buscar_usuario(usuario_id: int, usuario: Usuario = Depends(usuario_atual), d
     if not obj: raise HTTPException(404, "Usuário não encontrado")
     return obj
 
+@app.delete("/usuarios/{usuario_id}", tags=["Usuários"])
+def desativar_usuario(usuario_id: int, _: Usuario = Depends(exigir(Perfil.admin)), db: Session = Depends(get_db)):
+    obj = db.get(Usuario, usuario_id)
+    if not obj:
+        raise HTTPException(404, "Usuário não encontrado")
+    if not obj.ativo:
+        raise HTTPException(409, "Usuário já está desativado")
+    obj.ativo = False
+    db.commit()
+    return {"mensagem": "Usuário desativado"}
+
 @app.post("/categorias", response_model=CategoriaOut, status_code=201, tags=["Categorias"])
 def criar_categoria(dados: CategoriaCreate, _: Usuario = Depends(exigir(Perfil.admin, Perfil.organizador)), db: Session = Depends(get_db)):
     if db.scalar(select(Categoria).where(Categoria.nome == dados.nome)):
@@ -326,6 +337,20 @@ def criar_categoria(dados: CategoriaCreate, _: Usuario = Depends(exigir(Perfil.a
 @app.get("/categorias", response_model=list[CategoriaOut], tags=["Categorias"])
 def listar_categorias(db: Session = Depends(get_db)):
     return db.scalars(select(Categoria)).all()
+
+@app.delete("/categorias/{categoria_id}", tags=["Categorias"])
+def excluir_categoria(categoria_id: int, _: Usuario = Depends(exigir(Perfil.admin)), db: Session = Depends(get_db)):
+    obj = db.get(Categoria, categoria_id)
+    if not obj:
+        raise HTTPException(404, "Categoria não encontrada")
+    evento_vinculado = db.scalar(
+        select(Evento.id).where(Evento.categoria_id == categoria_id).limit(1)
+    )
+    if evento_vinculado:
+        raise HTTPException(409, "Categoria vinculada a um ou mais eventos")
+    db.delete(obj)
+    db.commit()
+    return {"mensagem": "Categoria excluída"}
 
 @app.post("/eventos", response_model=EventoOut, status_code=201, tags=["Eventos"])
 def criar_evento(dados: EventoCreate, usuario: Usuario = Depends(exigir(Perfil.admin, Perfil.organizador)), db: Session = Depends(get_db)):
