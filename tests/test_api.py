@@ -307,3 +307,137 @@ def test_categoria_vinculada_nao_pode_ser_excluida(client):
     )
 
     assert resposta.status_code == 409
+
+
+# ============================================================
+# TESTES DE EVENTOS
+# ============================================================
+
+def criar_evento(client, token, titulo="Evento de Teste", capacidade=10):
+    return client.post(
+        "/eventos",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "titulo": titulo,
+            "descricao": "Descrição do evento",
+            "data_inicio": "2027-05-10T09:00:00",
+            "data_fim": "2027-05-10T18:00:00",
+            "capacidade": capacidade,
+            "preco": 50.0
+        }
+    )
+
+
+def test_organizador_cria_evento(client):
+    cadastrar_usuario(client, "organizador_evento@email.com", "organizador")
+    token = obter_token(client, "organizador_evento@email.com")
+
+    resposta = criar_evento(client, token)
+
+    assert resposta.status_code == 201
+    assert resposta.json()["titulo"] == "Evento de Teste"
+    assert resposta.json()["status"] == "planejado"
+
+
+def test_participante_nao_pode_criar_evento(client):
+    cadastrar_usuario(client, "participante_evento@email.com")
+    token = obter_token(client, "participante_evento@email.com")
+
+    resposta = criar_evento(client, token)
+
+    assert resposta.status_code == 403
+
+
+def test_evento_com_data_invalida(client):
+    cadastrar_usuario(client, "organizador_data@email.com", "organizador")
+    token = obter_token(client, "organizador_data@email.com")
+
+    resposta = client.post(
+        "/eventos",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "titulo": "Evento com data inválida",
+            "data_inicio": "2027-05-10T18:00:00",
+            "data_fim": "2027-05-10T09:00:00",
+            "capacidade": 10,
+            "preco": 0
+        }
+    )
+
+    assert resposta.status_code == 422
+
+
+def test_evento_com_capacidade_zero(client):
+    cadastrar_usuario(client, "organizador_capacidade@email.com", "organizador")
+    token = obter_token(client, "organizador_capacidade@email.com")
+
+    resposta = client.post(
+        "/eventos",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "titulo": "Evento sem capacidade",
+            "data_inicio": "2027-05-10T09:00:00",
+            "data_fim": "2027-05-10T18:00:00",
+            "capacidade": 0,
+            "preco": 0
+        }
+    )
+
+    assert resposta.status_code == 422
+
+
+def test_listar_eventos_publicamente(client):
+    resposta = client.get("/eventos")
+
+    assert resposta.status_code == 200
+    assert isinstance(resposta.json(), list)
+
+
+def test_consultar_evento_inexistente(client):
+    resposta = client.get("/eventos/9999")
+
+    assert resposta.status_code == 404
+
+
+def test_organizador_nao_edita_evento_de_outro(client):
+    cadastrar_usuario(client, "organizador_a@email.com", "organizador")
+    cadastrar_usuario(client, "organizador_b@email.com", "organizador")
+
+    token_a = obter_token(client, "organizador_a@email.com")
+    token_b = obter_token(client, "organizador_b@email.com")
+
+    evento = criar_evento(client, token_a)
+    evento_id = evento.json()["id"]
+
+    resposta = client.put(
+        f"/eventos/{evento_id}",
+        headers={"Authorization": f"Bearer {token_b}"},
+        json={
+            "titulo": "Tentativa de alteração",
+            "data_inicio": "2027-05-10T09:00:00",
+            "data_fim": "2027-05-10T18:00:00",
+            "capacidade": 10,
+            "preco": 50
+        }
+    )
+
+    assert resposta.status_code == 403
+
+
+def test_organizador_cancela_evento_proprio(client):
+    cadastrar_usuario(client, "organizador_cancelar@email.com", "organizador")
+    token = obter_token(client, "organizador_cancelar@email.com")
+
+    evento = criar_evento(client, token)
+    evento_id = evento.json()["id"]
+
+    resposta = client.delete(
+        f"/eventos/{evento_id}",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["mensagem"] == "Evento cancelado"
+
+    consulta = client.get(f"/eventos/{evento_id}")
+    assert consulta.json()["status"] == "cancelado"
