@@ -293,7 +293,21 @@ def registrar(dados: UsuarioCreate, db: Session = Depends(get_db)):
 
     return usuario
 
-@app.post("/auth/login", tags=["Autenticação"])
+@app.post(
+    "/auth/login",
+    tags=["Autenticação"],
+    summary="Autenticar usuário",
+    description=(
+        "Autentica um usuário utilizando e-mail e senha. "
+        "O campo username deve receber o e-mail cadastrado. "
+        "O usuário precisa estar ativo. Em caso de sucesso, "
+        "retorna um token JWT do tipo Bearer para acessar as rotas protegidas."
+    ),
+    responses={
+        401: {"description": "E-mail ou senha inválidos, ou usuário inativo."},
+        422: {"description": "Dados de autenticação inválidos."},
+    },
+)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     usuario = db.scalar(select(Usuario).where(Usuario.email == form.username))
     if not usuario or not usuario.ativo or not pwd_context.verify(form.password, usuario.senha_hash):
@@ -352,7 +366,22 @@ def excluir_categoria(categoria_id: int, _: Usuario = Depends(exigir(Perfil.admi
     db.commit()
     return {"mensagem": "Categoria excluída"}
 
-@app.post("/eventos", response_model=EventoOut, status_code=201, tags=["Eventos"])
+@app.post(
+    "/eventos",
+    response_model=EventoOut,
+    status_code=201,
+    tags=["Eventos"],
+    summary="Criar evento",
+    description=(
+        "Cria um novo evento. A operação é permitida para administradores "
+        "e organizadores autenticados. A data de fim deve ser posterior "
+        "à data de início. Caso uma categoria seja informada, ela deve existir."
+    ),
+    responses={
+        404: {"description": "Categoria não encontrada."},
+        422: {"description": "Data inválida ou dados da requisição inválidos."},
+    },
+)
 def criar_evento(dados: EventoCreate, usuario: Usuario = Depends(exigir(Perfil.admin, Perfil.organizador)), db: Session = Depends(get_db)):
     if dados.data_fim <= dados.data_inicio:
         raise HTTPException(422, "A data de fim deve ser posterior à data de início")
@@ -436,7 +465,26 @@ def consultar_vagas(evento_id: int, db: Session = Depends(get_db)):
     disponiveis = vagas_disponiveis(evento_id, db)
     return {"evento_id": evento_id, "capacidade": evento.capacidade, "vagas_disponiveis": disponiveis}
 
-@app.post("/eventos/{evento_id}/inscricoes", response_model=InscricaoOut, status_code=201, tags=["Inscrições"])
+@app.post(
+    "/eventos/{evento_id}/inscricoes",
+    response_model=InscricaoOut,
+    status_code=201,
+    tags=["Inscrições"],
+    summary="Inscrever usuário em evento",
+    description=(
+        "Realiza a inscrição de um usuário autenticado em um evento. "
+        "A operação é permitida para administradores e participantes. "
+        "Não permite inscrição em eventos cancelados, eventos lotados "
+        "ou inscrições duplicadas. Ao preencher a última vaga, o evento "
+        "passa automaticamente para o status lotado."
+    ),
+    responses={
+        400: {"description": "O evento está cancelado."},
+        404: {"description": "Evento não encontrado."},
+        409: {"description": "Evento lotado ou usuário já inscrito."},
+        422: {"description": "Dados da requisição inválidos."},
+    },
+)
 def inscrever(evento_id: int, usuario: Usuario = Depends(exigir(Perfil.admin, Perfil.participante)), db: Session = Depends(get_db)):
     evento = db.get(Evento, evento_id)
     if not evento: raise HTTPException(404, "Evento não encontrado")
