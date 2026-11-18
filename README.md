@@ -1,4 +1,4 @@
-# GESTÃO DE EVENTOS — API
+﻿# GESTÃO DE EVENTOS — API
 
 Projeto acadêmico desenvolvido em FastAPI para gerenciamento de usuários, eventos, categorias, inscrições, vagas e certificados.
 
@@ -150,6 +150,6 @@ O cadastro público não permite criar diretamente um usuário com perfil `admin
 
 Para demonstrar rotas administrativas em uma entrega acadêmica, recomenda-se utilizar um mecanismo de bootstrap ou seed de administrador separado e protegido.
 
-A chave JWT está definida no arquivo para facilitar o ambiente acadêmico. Em produção, ela deve ser armazenada em uma variável de ambiente.
+A chave JWT é carregada pela variável JWT_SECRET_KEY, configurada no arquivo .env. O arquivo .env.example apresenta o modelo de configuração. Nunca publique chaves reais no repositório.
 
 Arquivos locais de banco de dados e variáveis de ambiente não devem ser enviados ao repositório.
