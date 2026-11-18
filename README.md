@@ -4,16 +4,16 @@ Projeto acadêmico desenvolvido em FastAPI para gerenciamento de usuários, even
 
 ## Tecnologias
 
-- FastAPI
-- Swagger/OpenAPI
-- Pydantic
-- SQLAlchemy
-- SQLite
-- Alembic
-- JWT
-- bcrypt
-- Uvicorn
-- Pytest
+* FastAPI
+* Swagger/OpenAPI
+* Pydantic
+* SQLAlchemy
+* SQLite
+* Alembic
+* JWT
+* bcrypt
+* Uvicorn
+* Pytest
 
 ## Estrutura do projeto
 
@@ -26,17 +26,17 @@ GESTAO-DE-EVENTOS/
 ├── .env.example
 ├── .gitignore
 ├── README.md
-├── MATRIZ_PERMISSOES.md
+├── MATRIZ\_PERMISSOES.md
 ├── alembic/
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions/
-│       ├── 0001_criacao_inicial.py
-│       ├── 76d7635e77bd_descricao_da_alteracao.py
-│       ├── 628022ca30a4_descricao_da_alteracao.py
-│       └── 8e12ef9a37a6_teste_controle_migracoes.py
+│       ├── 0001\_criacao\_inicial.py
+│       ├── 76d7635e77bd\_descricao\_da\_alteracao.py
+│       ├── 628022ca30a4\_descricao\_da\_alteracao.py
+│       └── 8e12ef9a37a6\_teste\_controle\_migracoes.py
 └── tests/
-    └── test_api.py
+    └── test\_api.py
 ```
 
 ## Instalação
@@ -46,6 +46,23 @@ Instale as dependências do projeto:
 ```bash
 python -m pip install -r requirements.txt
 ```
+### Configuração do ambiente
+
+
+
+Crie o arquivo `.env` a partir do modelo:
+
+
+
+```powershell
+
+Copy-Item .env.example .env
+
+```
+
+
+
+Edite o arquivo `.env` e configure uma chave secreta própria para JWT antes de executar a API. Nunca compartilhe essa chave.
 
 ## Banco de dados e migrations
 
@@ -70,7 +87,7 @@ python -m alembic history
 Para criar uma nova migration depois de alterar os modelos:
 
 ```bash
-python -m alembic revision --autogenerate -m "descricao_da_alteracao"
+python -m alembic revision --autogenerate -m "descricao\_da\_alteracao"
 ```
 
 Depois, aplique a migration:
@@ -84,8 +101,8 @@ python -m alembic upgrade head
 No PowerShell, se o terminal estiver na pasta raiz `GESTAO-DE-EVENTOS-ALEMBIC`, execute:
 
 ```powershell
-Set-Location .\GESTAO-DE-EVENTOS
-.\.venv\Scripts\python.exe -m uvicorn main:app --reload
+Set-Location .\\GESTAO-DE-EVENTOS
+.\\.venv\\Scripts\\python.exe -m uvicorn main:app --reload
 ```
 
 Se o terminal já estiver dentro da pasta `GESTAO-DE-EVENTOS`, execute:
@@ -108,13 +125,13 @@ http://127.0.0.1:8001/docs
 
 As operações estão organizadas por assunto:
 
-- Autenticação
-- Usuários
-- Categorias
-- Eventos
-- Inscrições
-- Certificados
-- Sistema
+* Autenticação
+* Usuários
+* Categorias
+* Eventos
+* Inscrições
+* Certificados
+* Sistema
 
 ## Fluxo de teste da API
 
@@ -150,7 +167,7 @@ O cadastro público não permite criar diretamente um usuário com perfil `admin
 
 Para demonstrar rotas administrativas em uma entrega acadêmica, recomenda-se utilizar um mecanismo de bootstrap ou seed de administrador separado e protegido.
 
-A chave JWT é carregada pela variável JWT_SECRET_KEY, configurada no arquivo .env. O arquivo .env.example apresenta o modelo de configuração. Nunca publique chaves reais no repositório.
+A chave JWT é carregada pela variável JWT\_SECRET\_KEY, configurada no arquivo .env. O arquivo .env.example apresenta o modelo de configuração. Nunca publique chaves reais no repositório.
 
 Arquivos locais de banco de dados e variáveis de ambiente não devem ser enviados ao repositório.
 
@@ -159,3 +176,4 @@ Arquivos locais de banco de dados e variáveis de ambiente não devem ser enviad
 1. **Tratamento de erros:** padronização das respostas HTTP, utilizando códigos adequados para permissões insuficientes, registros não encontrados e conflitos.
 2. **Validação das regras de negócio:** prevenção de inscrições duplicadas, inscrições em eventos cancelados ou lotados e datas inválidas.
 3. **Documentação da API:** melhoria das descrições dos endpoints, organização por categorias e documentação dos códigos de resposta no Swagger/OpenAPI.
+
