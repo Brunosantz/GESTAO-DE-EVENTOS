@@ -3,6 +3,7 @@ import secrets
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from enum import Enum
+from typing import Literal
 
 from dotenv import load_dotenv
 
@@ -212,7 +213,7 @@ class UsuarioCreate(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     email: EmailStr
     senha: str = Field(min_length=6, max_length=100)
-
+    perfil: Literal["participante", "organizador"] = "participante"
 
 class UsuarioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -460,11 +461,13 @@ def health():
     status_code=201,
     tags=["Autenticação"],
     summary="Cadastrar usuário",
-    description=(
-        "Cadastra um novo usuário no sistema. "
-        "O usuário é criado com o perfil participante por padrão. "
-        "O e-mail deve ser único e a senha precisa atender aos critérios mínimos."
-    ),
+   description=(
+    "Cadastra um novo usuário no sistema. "
+    "Permite escolher entre os perfis participante e organizador. "
+    "O perfil participante é utilizado por padrão. "
+    "O perfil administrador não pode ser criado pelo cadastro público. "
+    "O e-mail deve ser único e a senha precisa atender aos critérios mínimos."
+),
     responses={
         409: {"description": "E-mail já cadastrado."},
         422: {"description": "Dados de cadastro inválidos."},
@@ -475,11 +478,12 @@ def registrar(dados: UsuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(409, "E-mail já cadastrado")
 
     usuario = Usuario(
-        nome=dados.nome,
-        email=dados.email,
-        senha_hash=pwd_context.hash(dados.senha),
-        perfil=Perfil.participante.value
-    )
+    nome=dados.nome,
+    email=dados.email,
+    senha_hash=pwd_context.hash(dados.senha),
+    perfil=dados.perfil
+)
+    
 
     db.add(usuario)
     db.commit()
