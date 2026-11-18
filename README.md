@@ -153,3 +153,9 @@ Para demonstrar rotas administrativas em uma entrega acadêmica, recomenda-se ut
 A chave JWT é carregada pela variável JWT_SECRET_KEY, configurada no arquivo .env. O arquivo .env.example apresenta o modelo de configuração. Nunca publique chaves reais no repositório.
 
 Arquivos locais de banco de dados e variáveis de ambiente não devem ser enviados ao repositório.
+
+## Melhorias de qualidade
+
+1. **Tratamento de erros:** padronização das respostas HTTP, utilizando códigos adequados para permissões insuficientes, registros não encontrados e conflitos.
+2. **Validação das regras de negócio:** prevenção de inscrições duplicadas, inscrições em eventos cancelados ou lotados e datas inválidas.
+3. **Documentação da API:** melhoria das descrições dos endpoints, organização por categorias e documentação dos códigos de resposta no Swagger/OpenAPI.
